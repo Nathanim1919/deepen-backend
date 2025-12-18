@@ -59,3 +59,4 @@ export async function connectMongo(): Promise<typeof mongoose> {
     `Failed to connect to MongoDB after ${maxRetries} attempts. Last error: ${lastError?.message || lastError}`,
   );
 }
+
