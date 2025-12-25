@@ -13,6 +13,7 @@ import {
   validateRequest,
 } from "../../ai/services/aiService";
 import { UserService } from "../services/user.service";
+import { listModels } from "../../common/config/openRouter";
 
 // Constants
 const SERVICE_NAME = "AIController";
@@ -101,6 +102,16 @@ export class AIController {
         errorCode: "AI_SUMMARY_FAILED",
       });
     }
+  }
+
+  static async listModels(_req: Request, res: Response): Promise<void> {
+    const models = await listModels();
+    SuccessResponse({
+      res,
+      statusCode: 200,
+      data: models,
+      message: "Models listed successfully",
+    });
   }
 
   /**
