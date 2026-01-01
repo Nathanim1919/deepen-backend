@@ -44,7 +44,6 @@ export interface BrainChatRequest {
 
 export interface BrainChatStartRequest {
   id: string;
-  title: string;
   createdAt: Date;
   context: BrainChatContext;
   messages: BrainChatMessage[];
@@ -213,7 +212,7 @@ export class BrainChatService {
 
   /**
    * Create a new brain chat session with streaming
-   * @param userId
+   * @param userIdsendMessage
    * @param request
    * @param signal
    * @returns Object with conversation and stream
@@ -226,7 +225,7 @@ export class BrainChatService {
 
       const conversation = new BrainChatConversation({
         userId: new Types.ObjectId(userId),
-        title: "new conversation",
+        title: "",
         createdAt: request.createdAt,
         context: request.context,
         messages: request.messages
@@ -309,9 +308,9 @@ export class BrainChatService {
 
   /**
    * Send a message to a brain chat conversation
-   * @param conversationId 
-   * @param userId 
-   * @param message 
+   * @param conversationId
+   * @param userId
+   * @param message
    */
   static async sendMessage(
     conversationId: string,
@@ -319,11 +318,20 @@ export class BrainChatService {
     content: string,
     signal?: AbortSignal
   ) {
-    const conversation = await BrainChatConversation.findById(conversationId);
+    const conversation = await BrainChatConversation.findOne({ _id: new Types.ObjectId(conversationId), userId: new Types.ObjectId(userId) });
     if (!conversation) {
       throw new Error("Conversation not found");
     }
-  
+
+    // Add the user message to conversation (will be saved by controller)
+    conversation.messages.push({
+      id: uuidv4() as string,
+      role: 'user' as const,
+      content: content,
+      timestamp: new Date(),
+      status: 'sent' as const
+    } as BrainChatMessage);
+
     const messages: Message[] = [
       {
         role: "system",
@@ -333,15 +341,14 @@ export class BrainChatService {
         role: m.role,
         content: m.content,
       })),
-      { role: "user", content },
     ];
-  
+
     const stream = await sendMessage(
-      "gpt-4o-mini",
+      "gpt-5.1",
       messages,
       signal
     );
-  
+
     // 🚨 DO NOT consume the stream here
     return { conversation, stream };
   }
@@ -387,9 +394,24 @@ export class BrainChatService {
   /**
    * Generate a title for the chat session based on the first message
    */
-  static generateSessionTitle(firstMessage: string): string {
-    const words = firstMessage.split(' ').slice(0, 5).join(' ');
-    return words.length > 50 ? words.substring(0, 47) + '...' : words;
+  static async generateConversationTitle(messages: BrainChatMessage[]): Promise<string> {
+    const res = await openRouter.chat.send({
+      model: "gpt-5.1",
+      messages: [
+        {
+          role: "system",
+          content: "You are a helpful assistant that can generate a title for a brain chat conversation based on the conversation history. The title should be a single sentence that captures the essence of the conversation. The title should be no more than 10 words.",
+        },
+        ...messages.map(m => ({
+          role: m.role,
+          content: m.content,
+        })),
+      ],
+      stream: false, // Non-streaming for title generation
+    });
+
+    const content = res.choices[0]?.message?.content;
+    return typeof content === 'string' ? content : "New Conversation";
   }
 
   
