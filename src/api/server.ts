@@ -6,6 +6,7 @@ import collectionRoutes from "./routes/collectionRoute";
 import sourceRoutes from "./routes/sourceRoute"; // Import source routes
 import { userProfileRoutes } from "./routes/userRoute";
 import aiChatRoutes from "./routes/chatRoutes";
+import brainAiRoutes from "./routes/brainAiRoute";
 import feedbackRoutes from "./routes/feedbackRoutes";
 import waitlistRoutes from "./routes/waitlistRoute";
 import { auth } from "../lib/auth";
@@ -57,6 +58,10 @@ app.use("/api/v1/account", userProfileRoutes);
 app.use("/api/v1/ai", aiChatRoutes);
 app.use("/api/v1/feedback", feedbackRoutes);
 app.use("/api/v1/waitlist", waitlistRoutes);
+app.use("/api/v1/brain", brainAiRoutes);
+
+
+
 app.use("/api/v1/health", (_: Request, res: Response) => {
   res.status(200).json({ status: "ok", message: "Server is healthy" });
 });
