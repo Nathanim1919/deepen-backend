@@ -14,7 +14,7 @@ export class BrainChatController {
 
     try {
       const { user } = req;
-      const { title, createdAt, context, messages } = req.body;
+      const { createdAt, context, messages } = req.body;
 
       // Prepare SSE headers
       res.setHeader("Content-Type", "text/event-stream");
@@ -24,7 +24,7 @@ export class BrainChatController {
       const { conversation, stream } =
         await BrainChatService.startConversationStreaming(
           user.id,
-          { id: user.id, title, createdAt, context, messages },
+          { id: user.id, createdAt, context, messages },
           controller.signal
         );
 
@@ -58,6 +58,9 @@ export class BrainChatController {
         timestamp: new Date(),
         status: "received",
       });
+
+      const title = await BrainChatService.generateConversationTitle(conversation.messages);
+      conversation.title = title;
 
       await conversation.save();
 
